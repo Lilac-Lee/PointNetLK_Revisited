@@ -1,0 +1,6 @@
+numpy
+scipy
+open3d>=0.8.0.0
+h5py
+six
+tqdm
