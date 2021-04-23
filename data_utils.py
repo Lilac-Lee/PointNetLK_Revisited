@@ -1,4 +1,6 @@
-""" part of source code from PointNetLK, modified. """
+""" part of source code from PointNetLK (https://github.com/hmgoforth/PointNetLK), 
+Deep Global Registration (https://github.com/chrischoy/DeepGlobalRegistration),
+SECOND (https://github.com/traveller59/second.pytorch), modified. """
 
 import os
 import glob
@@ -7,7 +9,6 @@ import torch
 import torch.utils.data
 import six
 import copy
-import h5py
 import csv
 import open3d as o3d
 
@@ -52,7 +53,7 @@ def find_voxel_overlaps(p0, p1, voxel):
 
 
 class ThreeDMatch_Testing(torch.utils.data.Dataset):
-    def __init__(self, dataset_path, category, overlap_ratio, voxel_ratio, voxel, max_voxel_points, num_voxels, rigid_transform, mode='test'):
+    def __init__(self, dataset_path, category, overlap_ratio, voxel_ratio, voxel, max_voxel_points, num_voxels, rigid_transform):
         self.dataset_path = dataset_path
         self.pairs = []
         with open(category, 'r') as fi:
@@ -71,7 +72,6 @@ class ThreeDMatch_Testing(torch.utils.data.Dataset):
         self.voxel = int(voxel)
         self.max_voxel_points = max_voxel_points
         self.num_voxels = num_voxels
-        self.mode = mode
         self.perturbation = load_pose(rigid_transform, len(self.pairs))
 
     def __len__(self):
@@ -142,7 +142,7 @@ class ThreeDMatch_Testing(torch.utils.data.Dataset):
 class RandomTransformSE3:
     """ randomly generate rigid transformations """
 
-    def __init__(self, mag=1, mag_randomly=False):
+    def __init__(self, mag=1, mag_randomly=True):
         self.mag = mag
         self.randomly = mag_randomly
         self.gt = None
@@ -366,11 +366,6 @@ def find_classes(root):
     """ find ${root}/${class}/* """
     classes = [d for d in os.listdir(root) if os.path.isdir(os.path.join(root, d))]
     classes.sort()
-    class_to_idx = {classes[i]: i for i in range(len(classes))}
-    return classes, class_to_idx
-
-
-def classes_to_cinfo(classes):
     class_to_idx = {classes[i]: i for i in range(len(classes))}
     return classes, class_to_idx
 
@@ -711,6 +706,27 @@ class OnUnitCube:
         return self.method2(tensor)
 
 
+class ModelNet(Globset):
+    """ [Princeton ModelNet](http://modelnet.cs.princeton.edu/) """
+    def __init__(self, dataset_path, train=1, transform=None, classinfo=None):
+        loader = offread
+        if train > 0:
+            pattern = 'train/*.off'
+        elif train == 0:
+            pattern = 'test/*.off'
+        else:
+            pattern = ['train/*.off', 'test/*.off']
+        super().__init__(dataset_path, pattern, loader, transform, classinfo)
+
+
+class ShapeNet2(Globset):
+    """ [ShapeNet](https://www.shapenet.org/) v2 """
+    def __init__(self, dataset_path, transform=None, classinfo=None):
+        loader = objread
+        pattern = '*/models/model_normalized.obj'
+        super().__init__(dataset_path, pattern, loader, transform, classinfo)
+        
+
 class Resampler:
     """ [N, D] -> [M, D] """
     def __init__(self, num):
@@ -729,16 +745,3 @@ class Resampler:
             out[selected:(selected + sel)] = val
             selected += sel
         return out
-
-
-class ModelNet(Globset):
-    """ [Princeton ModelNet](http://modelnet.cs.princeton.edu/) """
-    def __init__(self, dataset_path, train=1, transform=None, classinfo=None):
-        loader = offread
-        if train > 0:
-            pattern = 'train/*.off'
-        elif train == 0:
-            pattern = 'test/*.off'
-        else:
-            pattern = ['train/*.off', 'test/*.off']
-        super().__init__(dataset_path, pattern, loader, transform, classinfo)

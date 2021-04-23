@@ -4,7 +4,7 @@
 [Xueqian Li](https://lilac-lee.github.io/), [Jhony Kaesemodel Pontes](https://jhonykaesemodel.com/), 
 [Simon Lucey](https://www.adelaide.edu.au/directory/simon.lucey)
 
-2021 Conference on Computer Vision and Pattern Recognition (CVPR) (**oral**)
+Will appear on 2021 Conference on Computer Vision and Pattern Recognition (CVPR) (**oral**)
 
 arXiv link: https://arxiv.org/pdf/2008.09527v2.pdf
 
@@ -25,26 +25,40 @@ pip install -r requirements.txt
 ### Dataset
 You may download dataset used in the paper from these websites.
 
-| ModelNet40 | ShapeNet | 3DMatch | KITTI   |
-|:-:|:-:|:-:|:-:|
-| https://modelnet.cs.princeton.edu | https://shapenet.org | | |
+| ModelNet40 | ShapeNet | KITTI   |
+|:-:|:-:|:-:|
+| https://modelnet.cs.princeton.edu | https://shapenet.org | http://www.cvlibs.net/datasets/kitti/eval_odometry.php |
+
+We used 3DMatch dataset prepared by authors of Deep Global Registration, you may download using this script provided by them, https://github.com/chrischoy/DeepGlobalRegistration/blob/master/scripts/download_3dmatch.sh.
+
 
 ### Training
 ```
 python train.py
 ```
 
-### Testing
+### Evaluation
 ```
 python test.py
 ```
 
+
+### Pre-Trained Models
+You can find the pre-trained model in ***logs/model_trained_on_ModelNet40_model_best.pth***.
+This model is trained on ModelNet40 dataset, and is used to produce most results (except results of trained/tested on 3DMatch dataset) in the paper.
+
+
 ### Acknowledgement
-This code is adapted from the original PointNetLK, https://github.com/hmgoforth/PointNetLK.
+This code is mostly adapted from the original PointNetLK, https://github.com/hmgoforth/PointNetLK.
+
+The 3DMatch data loader code was adapted from the Deep Global Registration, https://github.com/chrischoy/DeepGlobalRegistration.
+
+Part of the data utility code was adapted from the SECOND, https://github.com/traveller59/second.pytorch.
+
+Part of the metric computaion code was adapted from the Deep Closest Point, https://github.com/WangYueFt/dcp.
 
 
-
-### Citation
+### Contributing
 If you find the project useful for your research, you may cite,
 ```
 
