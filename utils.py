@@ -323,7 +323,7 @@ def feature_jac(M, A, Ax, BN, device):
 
 # explicitly compute the analytical warp Jacobian
 def compute_warp_jac(t, xx, num_points):
-    b = t.shape[0]
+    b = xx.shape[0]
     
     warp_jac = torch.zeros(b, num_points, 3, 6)
     T = exp(t)
@@ -333,15 +333,15 @@ def compute_warp_jac(t, xx, num_points):
     x = xx[..., 0]
     y = xx[..., 1]
     z = xx[..., 2]
-    d03 = T[:, 1, 0] * z - T[:, 2, 0] * y   # BxN
-    d04 = -T[:, 0, 0] * z + T[:, 2, 0] * x
-    d05 = T[:, 0, 0] * y - T[:, 1, 0] * x
-    d13 = T[:, 1, 1] * z - T[:, 2, 1] * y
-    d14 = -T[:, 0, 1] * z + T[:, 2, 1] * x
-    d15 = T[:, 0, 1] * y - T[:, 1, 1] * x
-    d23 = T[:, 1, 2] * z - T[:, 2, 2] * y
-    d24 = -T[:, 0, 2] * z + T[:, 2, 2] * x
-    d25 = T[:, 0, 2] * y - T[:, 1, 2] * x
+    d03 = T[:, 1, 0].unsqueeze(1) * z - T[:, 2, 0].unsqueeze(1) * y   # BxN
+    d04 = -T[:, 0, 0].unsqueeze(1) * z + T[:, 2, 0].unsqueeze(1) * x
+    d05 = T[:, 0, 0].unsqueeze(1) * y - T[:, 1, 0].unsqueeze(1) * x
+    d13 = T[:, 1, 1].unsqueeze(1) * z - T[:, 2, 1].unsqueeze(1) * y
+    d14 = -T[:, 0, 1].unsqueeze(1) * z + T[:, 2, 1].unsqueeze(1) * x
+    d15 = T[:, 0, 1].unsqueeze(1) * y - T[:, 1, 1].unsqueeze(1) * x
+    d23 = T[:, 1, 2].unsqueeze(1) * z - T[:, 2, 2].unsqueeze(1) * y
+    d24 = -T[:, 0, 2].unsqueeze(1) * z + T[:, 2, 2].unsqueeze(1) * x
+    d25 = T[:, 0, 2].unsqueeze(1) * y - T[:, 1, 2].unsqueeze(1) * x
     
     d0 = torch.cat([d03.unsqueeze(-1), d04.unsqueeze(-1), d05.unsqueeze(-1)], -1)   # BxNx3
     d1 = torch.cat([d13.unsqueeze(-1), d14.unsqueeze(-1), d15.unsqueeze(-1)], -1)

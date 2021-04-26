@@ -20,6 +20,9 @@ pip install -r requirements.txt
 ```
 
 ### Demo Notebook
+We provide a jupyter notebook (you may need to install the jupyter notebook) of toy example in the demo folder. 
+You can run ./demo/test_toysample.ipynb to play with a point cloud pairs from 3DMatch dataset.
+Note that the open3d visualization might not work in the notebook.
 
 
 ### Dataset
@@ -31,6 +34,7 @@ You may download dataset used in the paper from these websites.
 
 We used 3DMatch dataset prepared by authors of Deep Global Registration, you may download using this script provided by them, https://github.com/chrischoy/DeepGlobalRegistration/blob/master/scripts/download_3dmatch.sh.
 
+After you download the dataset, you can create a symbolic link in the ./dataset folder as ```./dataset/ModelNet``` and ```./dataset/ThreeDMatch```.
 
 ### Training
 ```

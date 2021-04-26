@@ -286,10 +286,8 @@ class DeterministicPointNetLK(torch.nn.Module):
         # ANCHOR: compute the Jacobian matrix
         f0, Mask_fn, A_fn, Ax_fn, BN_fn, max_idx = self.ptnet(p0, -1)
         J = self.Cal_Jac(Mask_fn, A_fn, Ax_fn, BN_fn, max_idx,
-                          num_points, p0, mode, voxel_coords_diff=voxel_coords_diff)   # B x N x K x D, K=1024, D=3 or 6
+                          num_points, p0, mode, voxel_coords_diff=voxel_coords_diff, data_type=data_type)   # B x N x K x D, K=1024, D=3 or 6
 
-        self.last_err = None
-        itr = -1
         # compute psuedo inverse of the Jacobian to solve delta(xi)
         Jt = J.transpose(1, 2)   # [B, 6, K]
         H = Jt.bmm(J)   # [B, 6, 6]
@@ -303,6 +301,7 @@ class DeterministicPointNetLK(torch.nn.Module):
             self.prev_r = r
             # [B, 1, 4, 4] x [B, N, 3] -> [B, N, 3]
             p = self.transform(g.unsqueeze(1), p1)   # in local frame
+            
             if not training:
                 with torch.no_grad():
                     f = self.ptnet(p.float(), 0)   # [B, N, 3] -> [B, K], in local frame / global frame

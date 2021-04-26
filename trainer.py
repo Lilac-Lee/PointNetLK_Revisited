@@ -6,6 +6,7 @@ from scipy.spatial.transform import Rotation
 import tqdm
 import logging
 import open3d as o3d
+from open3d import JVisualizer   # for notebook
 
 import model
 import utils
@@ -83,7 +84,7 @@ class TrainerDeterministicPointNetLK:
         
         return ave_vloss, ave_loss_pose
 
-    def test_one_epoch(self, ptnetlk, testloader, device, mode, data_type='synthetic', vis=False):
+    def test_one_epoch(self, ptnetlk, testloader, device, mode, data_type='synthetic', vis=False, toyexample=False):
         ptnetlk.eval()
         rotations_gt = []
         translation_gt = []
@@ -95,8 +96,8 @@ class TrainerDeterministicPointNetLK:
             if data_type == 'real':
                 if vis:
                     voxel_features_p0, voxel_coords_p0, voxel_features_p1, voxel_coords_p1, gt_pose, p0, p1 = data
-                    p0 = p0.reshape(-1, p0.shape[2], p0.shape[3]).float().to(device)
-                    p1 = p1.reshape(-1, p1.shape[2], p1.shape[3]).float().to(device)
+                    p0 = p0.float().to(device)
+                    p1 = p1.float().to(device)
                 else:
                     voxel_features_p0, voxel_coords_p0, voxel_features_p1, voxel_coords_p1, gt_pose = data
                 voxel_features_p0 = voxel_features_p0.reshape(-1, voxel_features_p0.shape[2], voxel_features_p0.shape[3]).to(device)
@@ -151,7 +152,12 @@ class TrainerDeterministicPointNetLK:
                     pcd2.orient_normals_to_align_with_direction()
                     pcd2.paint_uniform_color([205/255, 107/255, 0/255])
                     
-                    o3d.visualization.draw_geometries([pcd0, pcd1, pcd2])
+                    if toyexample:
+                        visualizer = JVisualizer()
+                        visualizer.add_geometry([pcd0, pcd1, pcd2])
+                        visualizer.show()
+                    else:
+                        o3d.visualization.draw_geometries([pcd0, pcd1, pcd2])
                     
                 # euler representation for ground truth
                 tform_gt = ig_gt.squeeze().numpy().transpose()

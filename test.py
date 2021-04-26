@@ -42,7 +42,7 @@ def options(argv=None):
                         metavar='N', help='number of data loading workers')
 
     # settings for voxelization
-    parser.add_argument('--voxel_ratio', default=0.05, type=float,
+    parser.add_argument('--voxel_ratio', default=0.01, type=float,
                         metavar='D', help='voxel ratio')
     parser.add_argument('--voxel', default=2, type=float,
                         metavar='D', help='how many voxels you want to divide in each axis')
@@ -132,7 +132,7 @@ def get_datasets(args):
     elif args.dataset_type == '3dmatch':
         testset = data_utils.ThreeDMatch_Testing(args.dataset_path, args.categoryfile, args.overlap_ratio, 
                                                  args.voxel_ratio, args.voxel, args.max_voxel_points, 
-                                                 args.num_voxels, args.pose_file)
+                                                 args.num_voxels, args.pose_file, args.vis)
     
     return testset
 
