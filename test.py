@@ -42,7 +42,7 @@ def options(argv=None):
                         metavar='N', help='number of data loading workers')
 
     # settings for voxelization
-    parser.add_argument('--voxel_ratio', default=0.01, type=float,
+    parser.add_argument('--voxel_ratio', default=0.05, type=float,
                         metavar='D', help='voxel ratio')
     parser.add_argument('--voxel', default=2, type=float,
                         metavar='D', help='how many voxels you want to divide in each axis')

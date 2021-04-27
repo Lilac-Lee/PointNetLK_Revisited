@@ -122,7 +122,7 @@ class DeterministicPointNetLK(torch.nn.Module):
     def rsq(r):
         z = torch.zeros_like(r)
         
-        return torch.nn.functional.mse_loss(r, z, reduction='mean')
+        return torch.nn.functional.mse_loss(r, z, reduction='sum')
 
     @staticmethod
     def comp(g, igt):
@@ -140,7 +140,7 @@ class DeterministicPointNetLK(torch.nn.Module):
         return loss_pose
 
     @staticmethod
-    def do_forward(net, p0, voxel_coords_p0, p1, voxel_coords_p1, maxiter=10, xtol=1.0e-7, p0_zero_mean=True, p1_zero_mean=True, mode='train', data_type='synthetic'):
+    def do_forward(net, p0, voxel_coords_p0, p1, voxel_coords_p1, maxiter=10, xtol=1.0e-7, p0_zero_mean=True, p1_zero_mean=True, mode='train', data_type='synthetic', num_random_points=100):
         voxel_coords_diff = None
         if mode != 'test' or data_type == 'synthetic':
             a0 = torch.eye(4).view(1, 4, 4).expand(
@@ -186,7 +186,7 @@ class DeterministicPointNetLK(torch.nn.Module):
         else:
             q1 = p1
 
-        r = net(q0, q1, mode, maxiter=maxiter, xtol=xtol, voxel_coords_diff=voxel_coords_diff, data_type=data_type)
+        r = net(q0, q1, mode, maxiter=maxiter, xtol=xtol, voxel_coords_diff=voxel_coords_diff, data_type=data_type, num_random_points=num_random_points)
 
         if p0_zero_mean or p1_zero_mean:
             # output' = trans(p0_m) * output * trans(-p1_m)
@@ -201,13 +201,13 @@ class DeterministicPointNetLK(torch.nn.Module):
 
         return r
 
-    def forward(self, p0, p1, mode, maxiter=10, xtol=1.0e-7, voxel_coords_diff=None, data_type='synthetic'):
+    def forward(self, p0, p1, mode, maxiter=10, xtol=1.0e-7, voxel_coords_diff=None, data_type='synthetic', num_random_points=100):
         if mode != 'test' or data_type == 'synthetic':
             g0 = torch.eye(4).to(p0).view(1, 4, 4).expand(
                 p0.size(0), 4, 4).contiguous()
         else:
             g0 = torch.eye(4).to(p0).view(1, 4, 4)
-        r, g, itr = self.iclk_new(g0, p0, p1, maxiter, xtol, mode, voxel_coords_diff=voxel_coords_diff, data_type=data_type)
+        r, g, itr = self.iclk_new(g0, p0, p1, maxiter, xtol, mode, voxel_coords_diff=voxel_coords_diff, data_type=data_type, num_random_points=num_random_points)
 
         self.g = g
         self.itr = itr
@@ -262,7 +262,7 @@ class DeterministicPointNetLK(torch.nn.Module):
             
         return J
 
-    def iclk_new(self, g0, p0, p1, maxiter, xtol, mode, voxel_coords_diff=None, data_type='synthetic'):
+    def iclk_new(self, g0, p0, p1, maxiter, xtol, mode, voxel_coords_diff=None, data_type='synthetic', num_random_points=100):
         training = self.ptnet.training
         if training:
             self.step_train += 1
@@ -276,17 +276,35 @@ class DeterministicPointNetLK(torch.nn.Module):
 
         g = g0
         
+        # create a data sampler
+        if mode != 'test':
+            data_sampler = np.random.choice(num_points, (num_points//num_random_points, num_random_points), replace=False)
         # input through entire pointnet
         if training:
             # first, update BatchNorm modules
-            f0 = self.ptnet(p0, 0)
-            f1 = self.ptnet(p1, 0)
+            f0 = self.ptnet(p0[:, data_sampler[0], :], 0)
+            f1 = self.ptnet(p1[:, data_sampler[0], :], 0)
         self.ptnet.eval()
 
+        if mode != 'test':
+            for i in range(1, num_points//num_random_points-1):
+                f0 = self.ptnet(p0[:, data_sampler[i], :], i)
+                f1 = self.ptnet(p1[:, data_sampler[i], :], i)
+                
         # ANCHOR: compute the Jacobian matrix
-        f0, Mask_fn, A_fn, Ax_fn, BN_fn, max_idx = self.ptnet(p0, -1)
-        J = self.Cal_Jac(Mask_fn, A_fn, Ax_fn, BN_fn, max_idx,
-                          num_points, p0, mode, voxel_coords_diff=voxel_coords_diff, data_type=data_type)   # B x N x K x D, K=1024, D=3 or 6
+        if mode == 'test':
+            f0, Mask_fn, A_fn, Ax_fn, BN_fn, max_idx = self.ptnet(p0, -1)
+            J = self.Cal_Jac(Mask_fn, A_fn, Ax_fn, BN_fn, max_idx,
+                            num_points, p0, mode, voxel_coords_diff=voxel_coords_diff, data_type=data_type)   # B x N x K x D, K=1024, D=3 or 6
+        else:
+            if num_points >= num_random_points:
+                random_idx = np.random.choice(num_points, num_random_points, replace=False)
+            else:
+                random_idx = np.random.choice(num_points, num_random_points, replace=True)
+            random_points = p0[:, random_idx]
+            f0, Mask_fn, A_fn, Ax_fn, BN_fn, max_idx = self.ptnet(random_points, -1)
+            J = self.Cal_Jac(Mask_fn, A_fn, Ax_fn, BN_fn, max_idx, 
+                             num_random_points, random_points, mode)   # B x N x K x 6, K=1024
 
         # compute psuedo inverse of the Jacobian to solve delta(xi)
         Jt = J.transpose(1, 2)   # [B, 6, K]
@@ -300,7 +318,10 @@ class DeterministicPointNetLK(torch.nn.Module):
         for itr in range(maxiter):
             self.prev_r = r
             # [B, 1, 4, 4] x [B, N, 3] -> [B, N, 3]
-            p = self.transform(g.unsqueeze(1), p1)   # in local frame
+            if mode == 'test':
+                p = self.transform(g.unsqueeze(1), p1)   # in local frame
+            else:
+                p = self.transform(g.unsqueeze(1), p1[:, random_idx])
             
             if not training:
                 with torch.no_grad():

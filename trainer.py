@@ -42,7 +42,7 @@ class TrainerDeterministicPointNetLK:
         ptnet = self.create_features()
         return self.create_from_pointnet_features(ptnet)
 
-    def train_one_epoch(self, ptnetlk, trainloader, optimizer, device, epoch, mode):
+    def train_one_epoch(self, ptnetlk, trainloader, optimizer, device, epoch, mode, num_random_points=100):
         ptnetlk.float()
         ptnetlk.train()
         vloss = 0.0
@@ -50,7 +50,7 @@ class TrainerDeterministicPointNetLK:
         batches = 0
 
         for i, data in enumerate(trainloader):
-            loss, loss_pose = self.compute_loss(ptnetlk, data, device, epoch, mode)
+            loss, loss_pose = self.compute_loss(ptnetlk, data, device, epoch, mode, num_random_points)
 
             optimizer.zero_grad()
             loss.backward()
@@ -66,14 +66,14 @@ class TrainerDeterministicPointNetLK:
         
         return ave_vloss, ave_loss_pose
 
-    def eval_one_epoch(self, ptnetlk, testloader, device, epoch, mode):
+    def eval_one_epoch(self, ptnetlk, testloader, device, epoch, mode, num_random_points=100):
         ptnetlk.eval()
         vloss = 0.0
         gloss = 0.0
         batches = 0
 
         for _, data in enumerate(testloader):
-            loss, loss_pose = self.compute_loss(ptnetlk, data, device, epoch, mode)
+            loss, loss_pose = self.compute_loss(ptnetlk, data, device, epoch, mode, num_random_points)
 
             vloss += (loss.item())
             gloss += (loss_pose.item())
@@ -189,7 +189,7 @@ class TrainerDeterministicPointNetLK:
         
         return 
 
-    def compute_loss(self, ptnetlk, data, device, mode, data_type='synthetic'):    
+    def compute_loss(self, ptnetlk, data, device, mode, data_type='synthetic', num_random_points=100):    
         # 1. non-voxelization
         if data_type == 'synthetic':
             p0, p1, gt_pose = data
@@ -197,7 +197,7 @@ class TrainerDeterministicPointNetLK:
             p1 = p1.to(self.device)
             gt_pose = gt_pose.to(device)
             r = model.DeterministicPointNetLK.do_forward(ptnetlk, p0, None,
-                                p1, None, self.max_iter, self.xtol, self.p0_zero_mean, self.p1_zero_mean, mode, data_type)
+                                p1, None, self.max_iter, self.xtol, self.p0_zero_mean, self.p1_zero_mean, mode, data_type, num_random_points)
         else:
             # 2. voxelization
             voxel_features_p0, voxel_coords_p0, voxel_features_p1, voxel_coords_p1, gt_pose = data
@@ -208,7 +208,7 @@ class TrainerDeterministicPointNetLK:
             gt_pose = gt_pose.reshape(-1, gt_pose.shape[2], gt_pose.shape[3]).to(device)
             
             r = model.DeterministicPointNetLK.do_forward(ptnetlk, voxel_features_p0_, voxel_coords_p0_,
-                    voxel_features_p1_, voxel_coords_p1_, self.max_iter, self.xtol, self.p0_zero_mean, self.p1_zero_mean, mode, data_type)
+                    voxel_features_p1_, voxel_coords_p1_, self.max_iter, self.xtol, self.p0_zero_mean, self.p1_zero_mean, mode, data_type, num_random_points)
 
         estimated_pose = ptnetlk.g
 

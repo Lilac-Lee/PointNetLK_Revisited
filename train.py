@@ -32,6 +32,8 @@ def options(argv=None):
                         metavar='PATH', help='path to the categories to be trained')
     parser.add_argument('--num_points', default=1000, type=int,
                         metavar='N', help='points in point-cloud.')
+    parser.add_argument('--num_random_points', default=100, type=int,
+                        metavar='N', help='number of random points to compute Jacobian.')
     parser.add_argument('--mag', default=0.8, type=float,
                         metavar='D', help='max. mag. of twist-vectors (perturbations) on training (default: 0.8)')
     parser.add_argument('--sigma', default=0.00, type=float,
@@ -124,9 +126,9 @@ def train(args, trainset, evalset, dptnetlk):
     LOGGER.debug('Begin Training!')
     for epoch in range(args.start_epoch, args.max_epochs):
         running_loss, running_info = dptnetlk.train_one_epoch(
-            model, trainloader, optimizer, args.device, epoch, 'train')
+            model, trainloader, optimizer, args.device, epoch, 'train', num_random_points=args.num_random_points)
         val_loss, val_info = dptnetlk.eval_one_epoch(
-            model, evalloader, args.device, epoch, 'eval')
+            model, evalloader, args.device, epoch, 'eval', num_random_points=args.num_random_points)
         
         is_best = val_loss < min_loss
         min_loss = min(val_loss, min_loss)
