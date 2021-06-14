@@ -6,7 +6,7 @@ from scipy.spatial.transform import Rotation
 import tqdm
 import logging
 import open3d as o3d
-from open3d import JVisualizer   # for notebook
+from open3d.web_visualizer import draw   # for notebook
 
 import model
 import utils
@@ -16,7 +16,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.NullHandler())
 
 
-class TrainerDeterministicPointNetLK:
+class TrainerAnalyticalPointNetLK:
     def __init__(self, args):
         # PointNet
         self.dim_k = args.dim_k
@@ -36,7 +36,7 @@ class TrainerDeterministicPointNetLK:
         return ptnet.float()
 
     def create_from_pointnet_features(self, ptnet):
-        return model.DeterministicPointNetLK(ptnet, self.device)
+        return model.AnalyticalPointNetLK(ptnet, self.device)
 
     def create_model(self):
         ptnet = self.create_features()
@@ -117,10 +117,10 @@ class TrainerDeterministicPointNetLK:
                 
             for j in range(start_idx, end_idx):
                 if data_type == 'real':
-                    _ = model.DeterministicPointNetLK.do_forward(ptnetlk, voxel_features_p0, voxel_coords_p0,
+                    _ = model.AnalyticalPointNetLK.do_forward(ptnetlk, voxel_features_p0, voxel_coords_p0,
                                 voxel_features_p1, voxel_coords_p1, j, self.xtol, self.p0_zero_mean, self.p1_zero_mean, mode, data_type)
                 else:
-                    _ = model.DeterministicPointNetLK.do_forward(ptnetlk, p0, None,
+                    _ = model.AnalyticalPointNetLK.do_forward(ptnetlk, p0, None,
                                 p1, None, j, self.xtol, self.p0_zero_mean, self.p1_zero_mean, mode, data_type)
 
                 estimated_pose = ptnetlk.g
@@ -128,7 +128,7 @@ class TrainerDeterministicPointNetLK:
                 ig_gt = gt_pose.cpu().contiguous().view(-1, 4, 4) # --> [1, 4, 4]
                 g_hat = estimated_pose.cpu().contiguous().view(-1, 4, 4).detach() # --> [1, 4, 4], p1->p0 (S->T)
 
-                if vis == 'True':
+                if vis:
                     # ANCHOR for visualization
                     p0_ = p0[0]
                     p1_ = p1[0]
@@ -153,9 +153,7 @@ class TrainerDeterministicPointNetLK:
                     pcd2.paint_uniform_color([205/255, 107/255, 0/255])
                     
                     if toyexample:
-                        visualizer = JVisualizer()
-                        visualizer.add_geometry([pcd0, pcd1, pcd2])
-                        visualizer.show()
+                        draw([pcd0, pcd1, pcd2])
                     else:
                         o3d.visualization.draw_geometries([pcd0, pcd1, pcd2])
                     
@@ -196,7 +194,7 @@ class TrainerDeterministicPointNetLK:
             p0 = p0.to(self.device)
             p1 = p1.to(self.device)
             gt_pose = gt_pose.to(device)
-            r = model.DeterministicPointNetLK.do_forward(ptnetlk, p0, None,
+            r = model.AnalyticalPointNetLK.do_forward(ptnetlk, p0, None,
                                 p1, None, self.max_iter, self.xtol, self.p0_zero_mean, self.p1_zero_mean, mode, data_type, num_random_points)
         else:
             # 2. voxelization
@@ -207,17 +205,17 @@ class TrainerDeterministicPointNetLK:
             voxel_coords_p1 = voxel_coords_p1.reshape(-1, voxel_coords_p1.shape[2]).to(device)
             gt_pose = gt_pose.reshape(-1, gt_pose.shape[2], gt_pose.shape[3]).to(device)
             
-            r = model.DeterministicPointNetLK.do_forward(ptnetlk, voxel_features_p0_, voxel_coords_p0_,
+            r = model.AnalyticalPointNetLK.do_forward(ptnetlk, voxel_features_p0_, voxel_coords_p0_,
                     voxel_features_p1_, voxel_coords_p1_, self.max_iter, self.xtol, self.p0_zero_mean, self.p1_zero_mean, mode, data_type, num_random_points)
 
         estimated_pose = ptnetlk.g
 
-        loss_pose = model.DeterministicPointNetLK.comp(estimated_pose, gt_pose)
+        loss_pose = model.AnalyticalPointNetLK.comp(estimated_pose, gt_pose)
         pr = ptnetlk.prev_r
         if pr is not None:
-            loss_r = model.DeterministicPointNetLK.rsq(r - pr)
+            loss_r = model.AnalyticalPointNetLK.rsq(r - pr)
         else:
-            loss_r = model.DeterministicPointNetLK.rsq(r)
+            loss_r = model.AnalyticalPointNetLK.rsq(r)
         loss = loss_r + loss_pose
 
         return loss, loss_pose

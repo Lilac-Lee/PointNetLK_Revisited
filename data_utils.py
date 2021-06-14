@@ -108,18 +108,6 @@ class ThreeDMatch_Testing(torch.utils.data.Dataset):
         voxel_coords_p1 = mesh3d[coords_p1_idx]
         
         # find voxels where number of points >= 80% of the maximum number of points
-        coords_p0_idx = coords_p0[:,1]*(int(self.voxel**2)) + coords_p0[:,0]*(int(self.voxel)) + coords_p0[:,2]
-        coords_p1_idx = coords_p1[:,1]*(int(self.voxel**2)) + coords_p1[:,0]*(int(self.voxel)) + coords_p1[:,2]
-        
-        # calculate for the voxel medium
-        xm_x = np.linspace(xmin+vx/2, xmax-vx/2, int(self.voxel))
-        xm_y = np.linspace(ymin+vy/2, ymax-vy/2, int(self.voxel))
-        xm_z = np.linspace(zmin+vz/2, zmax-vz/2, int(self.voxel))
-        mesh3d = np.vstack(np.meshgrid(xm_x,xm_y,xm_z)).reshape(3,-1).T
-        voxel_coords_p0 = mesh3d[coords_p0_idx]
-        voxel_coords_p1 = mesh3d[coords_p1_idx]
-        
-        # find voxels where number of points >= 80% of the maximum number of points
         idx_conditioned_p0 = coords_p0_idx[np.where(num_points_per_voxel_p0>=0.1*self.max_voxel_points)]
         idx_conditioned_p1 = coords_p1_idx[np.where(num_points_per_voxel_p1>=0.1*self.max_voxel_points)]
         idx_conditioned, _, _ = np.intersect1d(idx_conditioned_p0, idx_conditioned_p1, assume_unique=True, return_indices=True)
@@ -175,18 +163,6 @@ class ToyExampleData(torch.utils.data.Dataset):
         voxels_p1, coords_p1, num_points_per_voxel_p1 = points_to_voxel_second(p1, (xmin, ymin, zmin, xmax, ymax, zmax), 
                         (vx, vy, vz), self.max_voxel_points, reverse_index=False, max_voxels=self.num_voxels)
         
-        coords_p0_idx = coords_p0[:,1]*(int(self.voxel**2)) + coords_p0[:,0]*(int(self.voxel)) + coords_p0[:,2]
-        coords_p1_idx = coords_p1[:,1]*(int(self.voxel**2)) + coords_p1[:,0]*(int(self.voxel)) + coords_p1[:,2]
-        
-        # calculate for the voxel medium
-        xm_x = np.linspace(xmin+vx/2, xmax-vx/2, int(self.voxel))
-        xm_y = np.linspace(ymin+vy/2, ymax-vy/2, int(self.voxel))
-        xm_z = np.linspace(zmin+vz/2, zmax-vz/2, int(self.voxel))
-        mesh3d = np.vstack(np.meshgrid(xm_x,xm_y,xm_z)).reshape(3,-1).T
-        voxel_coords_p0 = mesh3d[coords_p0_idx]
-        voxel_coords_p1 = mesh3d[coords_p1_idx]
-        
-        # find voxels where number of points >= 80% of the maximum number of points
         coords_p0_idx = coords_p0[:,1]*(int(self.voxel**2)) + coords_p0[:,0]*(int(self.voxel)) + coords_p0[:,2]
         coords_p1_idx = coords_p1[:,1]*(int(self.voxel**2)) + coords_p1[:,0]*(int(self.voxel)) + coords_p1[:,2]
         

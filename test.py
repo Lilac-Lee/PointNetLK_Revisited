@@ -103,7 +103,7 @@ def test(args, testset, dptnetlk):
 
 def main(args):
     testset = get_datasets(args)
-    dptnetlk = trainer.TrainerDeterministicPointNetLK(args)
+    dptnetlk = trainer.TrainerAnalyticalPointNetLK(args)
     test(args, testset, dptnetlk)
 
 

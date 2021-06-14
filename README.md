@@ -1,4 +1,4 @@
-## PointNetLK_Revisited
+## [PointNetLK Revisited](https://arxiv.org/pdf/2008.09527.pdf)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 [Xueqian Li](https://lilac-lee.github.io/), [Jhony Kaesemodel Pontes](https://jhonykaesemodel.com/), 
@@ -6,7 +6,7 @@
 
 Will appear on 2021 Conference on Computer Vision and Pattern Recognition (CVPR) (**oral**)
 
-arXiv link: https://arxiv.org/pdf/2008.09527v2.pdf
+arXiv link: https://arxiv.org/pdf/2008.09527.pdf
 
 
 | ModelNet40 | 3DMatch | KITTI |
@@ -57,7 +57,7 @@ This code is mostly adapted from the original PointNetLK, https://github.com/hmg
 
 The 3DMatch data loader code was adapted from the Deep Global Registration, https://github.com/chrischoy/DeepGlobalRegistration.
 
-Part of the data utility code was adapted from the SECOND, https://github.com/traveller59/second.pytorch.
+Part of the data voxelization code was adapted from the SECOND, https://github.com/traveller59/second.pytorch.
 
 Part of the metric computaion code was adapted from the Deep Closest Point, https://github.com/WangYueFt/dcp.
 
@@ -65,5 +65,10 @@ Part of the metric computaion code was adapted from the Deep Closest Point, http
 ### Contributing
 If you find the project useful for your research, you may cite,
 ```
-
+@article{li2020pointnetlk_revisited,
+  author    = {Li, Xueqian and Pontes, Jhony Kaesemodel and Lucey, Simon},
+  title     = {PointNetLK Revisited},
+  journal   = {arXiv preprint arXiv:2008.09527},
+  year      = {2020},
+}
 ```

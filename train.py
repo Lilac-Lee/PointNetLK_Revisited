@@ -147,7 +147,7 @@ def train(args, trainset, evalset, dptnetlk):
 
 def main(args):
     trainset, evalset = get_datasets(args)
-    dptnetlk = trainer.TrainerDeterministicPointNetLK(args)
+    dptnetlk = trainer.TrainerAnalyticalPointNetLK(args)
     train(args, trainset, evalset, dptnetlk)
 
 

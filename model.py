@@ -100,7 +100,7 @@ class Pointnet_Features(torch.nn.Module):
             return x
 
 
-class DeterministicPointNetLK(torch.nn.Module):
+class AnalyticalPointNetLK(torch.nn.Module):
     def __init__(self, ptnet, device):
         super().__init__()
         self.ptnet = ptnet
