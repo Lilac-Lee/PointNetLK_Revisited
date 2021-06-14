@@ -18,6 +18,8 @@ This code is based on PyTorch implementation, and tested on 1.0.0<=torch<=1.6.0.
 ```
 pip install -r requirements.txt
 ```
+**NOTE**: we use open3d interactive visualization window in the jupyter notebook, which is only available for open3d>=0.13.0.
+
 
 ### Demo Notebook
 We provide a jupyter notebook (you may need to install the jupyter notebook) of toy example in the demo folder. 
