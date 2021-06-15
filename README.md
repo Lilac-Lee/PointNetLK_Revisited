@@ -24,7 +24,11 @@ pip install -r requirements.txt
 ### Demo Notebook
 We provide a jupyter notebook (you may need to install the jupyter notebook) of toy example in the demo folder. 
 You can run ./demo/test_toysample.ipynb to play with a point cloud pairs from 3DMatch dataset.
-Note that the open3d visualization might not work in the notebook.
+
+Here is a short video showing how to run the demo.
+|Demo notebook|
+|:-:|
+|<img src="imgs/code_demo.gif" width="600" height="330"/>|
 
 
 ### Dataset
