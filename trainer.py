@@ -152,36 +152,42 @@ class TrainerAnalyticalPointNetLK:
                     pcd2.orient_normals_to_align_with_direction()
                     pcd2.paint_uniform_color([205/255, 107/255, 0/255])
                     
-                    if toyexample:
-                        draw([pcd0, pcd1, pcd2])
+                    if j == 0:
+                        if toyexample:
+                            draw([pcd1, pcd2])
+                        else:
+                            o3d.visualization.draw_geometries([pcd1, pcd2])
                     else:
-                        o3d.visualization.draw_geometries([pcd0, pcd1, pcd2])
-                    
-                # euler representation for ground truth
-                tform_gt = ig_gt.squeeze().numpy().transpose()
-                R_gt = tform_gt[:3, :3]
-                euler_angle = Rotation.from_matrix(R_gt)
-                anglez_gt, angley_gt, anglex_gt = euler_angle.as_euler('zyx')
-                angle_gt = np.array([anglex_gt, angley_gt, anglez_gt])
-                rotations_gt.append(angle_gt)
-                trans_gt_t = -R_gt.dot(tform_gt[3, :3])
-                translation_gt.append(trans_gt_t)
-                # euler representation for predicted transformation
-                tform_ab = g_hat.squeeze().numpy()
-                R_ab = tform_ab[:3, :3]
-                euler_angle = Rotation.from_matrix(R_ab)
-                anglez_ab, angley_ab, anglex_ab = euler_angle.as_euler('zyx')
-                angle_ab = np.array([anglex_ab, angley_ab, anglez_ab])
-                rotations_ab.append(angle_ab)
-                trans_ab = tform_ab[:3, 3]
-                translation_ab.append(trans_ab)
-
+                        if toyexample:
+                            draw([pcd0, pcd1])
+                        else:
+                            o3d.visualization.draw_geometries([pcd0, pcd1])
+                            
                 dg = g_hat.bmm(ig_gt)   # if correct, dg == identity matrix.
                 dx = utils.log(dg)   # --> [1, 6] (if corerct, dx == zero vector)
                 dn = dx.norm(p=2, dim=1)   # --> [1]
                 dm = dn.mean()
                 
-                LOGGER.info('test, %d/%d, %f', i, len(testloader), dm)
+                LOGGER.info('test, %d/%d, %d iterations, %f', i, len(testloader), j, dm)
+                    
+            # euler representation for ground truth
+            tform_gt = ig_gt.squeeze().numpy().transpose()
+            R_gt = tform_gt[:3, :3]
+            euler_angle = Rotation.from_matrix(R_gt)
+            anglez_gt, angley_gt, anglex_gt = euler_angle.as_euler('zyx')
+            angle_gt = np.array([anglex_gt, angley_gt, anglez_gt])
+            rotations_gt.append(angle_gt)
+            trans_gt_t = -R_gt.dot(tform_gt[3, :3])
+            translation_gt.append(trans_gt_t)
+            # euler representation for predicted transformation
+            tform_ab = g_hat.squeeze().numpy()
+            R_ab = tform_ab[:3, :3]
+            euler_angle = Rotation.from_matrix(R_ab)
+            anglez_ab, angley_ab, anglex_ab = euler_angle.as_euler('zyx')
+            angle_ab = np.array([anglex_ab, angley_ab, anglez_ab])
+            rotations_ab.append(angle_ab)
+            trans_ab = tform_ab[:3, 3]
+            translation_ab.append(trans_ab)
 
         utils.test_metrics(rotations_gt, translation_gt, rotations_ab, translation_ab, self.filename)
         
