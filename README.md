@@ -71,10 +71,12 @@ Part of the metric computaion code was adapted from the Deep Closest Point, http
 ### Contributing
 If you find the project useful for your research, you may cite,
 ```
-@article{li2020pointnetlk_revisited,
-  author    = {Li, Xueqian and Pontes, Jhony Kaesemodel and Lucey, Simon},
-  title     = {PointNetLK Revisited},
-  journal   = {arXiv preprint arXiv:2008.09527},
-  year      = {2020},
+@InProceedings{Li_2021_CVPR,
+    author    = {Li, Xueqian and Pontes, Jhony Kaesemodel and Lucey, Simon},
+    title     = {PointNetLK Revisited},
+    booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+    month     = {June},
+    year      = {2021},
+    pages     = {12763-12772}
 }
 ```
