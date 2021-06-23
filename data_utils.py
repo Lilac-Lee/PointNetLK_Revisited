@@ -206,13 +206,12 @@ class RandomTransformSE3:
         self.gt = None
         self.igt = None
 
-    def generate_transform(self, b):
+    def generate_transform(self):
         amp = self.mag
         if self.randomly:
             amp = torch.rand(1, 1) * self.mag
         x = torch.randn(1, 6)
         x = x / x.norm(p=2, dim=1, keepdim=True) * amp
-        x = x.repeat(b, 1)
 
         return x
 
@@ -227,12 +226,12 @@ class RandomTransformSE3:
         
         return p1
 
-    def transform(self, tensor, b):
-        x = self.generate_transform(b)
+    def transform(self, tensor):
+        x = self.generate_transform()
         return self.apply_transform(tensor, x)
 
-    def __call__(self, tensor, b):
-        return self.transform(tensor, b)
+    def __call__(self, tensor):
+        return self.transform(tensor)
 
 
 def add_noise(pointcloud, sigma=0.01, clip=0.05):
@@ -253,10 +252,10 @@ class PointRegistration(torch.utils.data.Dataset):
         return len(self.dataset)
 
     def __getitem__(self, index):
-        pm = self.dataset[index]   # one point cloud
+        pm, _ = self.dataset[index]   # one point cloud
         p_ = add_noise(pm, sigma=self.sigma, clip=self.clip)
         p1 = self.transf(p_)
-        igt = self.transf.igt
+        igt = self.transf.igt.squeeze(0)
         p0 = pm
         
         # p0: template, p1: source, igt:transform matrix from p0 to p1
@@ -286,7 +285,7 @@ class PointRegistration_fixed_perturbation(torch.utils.data.Dataset):
         return p1, igt
     
     def __getitem__(self, index):
-        pm = self.dataset[index]   # one point cloud
+        pm, _ = self.dataset[index]   # one point cloud
         p_ = add_noise(pm, sigma=self.sigma, clip=self.clip)
         p0 = pm
         x = torch.from_numpy(self.transf[index][np.newaxis, ...]).to(p0)
@@ -737,7 +736,7 @@ class Mesh2Points:
         pass
 
     def __call__(self, mesh):
-        mesh = Mesh.clone()
+        mesh = mesh.clone()
         v = mesh.vertex_array
         return torch.from_numpy(v).type(dtype=torch.float)
 

@@ -22,14 +22,15 @@ def options(argv=None):
                         metavar='BASENAME', help='output filename (prefix)')
     parser.add_argument('--dataset_path', type=str, default='./dataset/ThreeDMatch',
                         metavar='PATH', help='path to the input dataset')
-    parser.add_argument('--categoryfile', type=str, default='./dataset/modelnet40_half2.txt',
-                        metavar='PATH', help='path to the categories to be tested')
+    parser.add_argument('--categoryfile', type=str, default='./dataset/test_3dmatch.txt',
+                        metavar='PATH', choices=['./dataset/test_3dmatch.txt', './dataset/modelnet40_half2.txt'], 
+                        help='path to the categories to be tested')
     parser.add_argument('--pose_file', type=str, default='./dataset/gt_poses.csv',
                         metavar='PATH', help='path to the testing pose files')
 
     # settings for input data
     parser.add_argument('--dataset_type', default='3dmatch', type=str,
-                        metavar='DATASET', help='dataset type')
+                        metavar='DATASET', choices=['modelnet', '3dmatch'], help='dataset type')
     parser.add_argument('--data_type', default='real', type=str,
                         metavar='DATASET', help='whether data is synthetic or real')
     parser.add_argument('--num_points', default=1000, type=int,
@@ -42,6 +43,8 @@ def options(argv=None):
                         metavar='N', help='number of data loading workers')
 
     # settings for voxelization
+    parser.add_argument('--overlap_ratio', default=0.7, type=float,
+                        metavar='D', help='overlapping ratio for 3DMatch dataset.')
     parser.add_argument('--voxel_ratio', default=0.05, type=float,
                         metavar='D', help='voxel ratio')
     parser.add_argument('--voxel', default=2, type=float,
@@ -51,7 +54,7 @@ def options(argv=None):
     parser.add_argument('--num_voxels', default=8, type=int,
                         metavar='N', help='number of voxels')
     parser.add_argument('--vis', action='store_true', default=False,
-                        metavar='V', help='whether to visualize or not')
+                        help='whether to visualize or not')
 
     # settings for Embedding
     parser.add_argument('--embedding', default='pointnet',
@@ -72,7 +75,7 @@ def options(argv=None):
     # settings for log
     parser.add_argument('-l', '--logfile', default='', type=str,
                         metavar='LOGNAME', help='path to logfile')
-    parser.add_argument('--pretrained', default='./log/model_trained_on_ModelNet40_model_best.pth', type=str,
+    parser.add_argument('--pretrained', default='./logs/model_trained_on_ModelNet40_model_best.pth', type=str,
                         metavar='PATH', help='path to pretrained model file ')
     
     args = parser.parse_args(argv)
@@ -109,7 +112,7 @@ def main(args):
 
 def get_datasets(args):
     cinfo = None
-    if args.categoryfile:
+    if args.categoryfile and args.data_type=='synthetic':
         categories = [line.rstrip('\n') for line in open(args.categoryfile)]
         categories.sort()
         c_to_idx = {categories[i]: i for i in range(len(categories))}
@@ -121,6 +124,7 @@ def get_datasets(args):
                     data_utils.OnUnitCube()])
 
         testdata = data_utils.ModelNet(args.dataset_path, train=-1, transform=transform, classinfo=cinfo)
+        testset = data_utils.PointRegistration_fixed_perturbation(testdata, args.pose_file, sigma=args.sigma, clip=args.clip)
         
     elif args.dataset_type == 'shapenet2':
         transform = torchvision.transforms.Compose([\
@@ -128,6 +132,7 @@ def get_datasets(args):
                     data_utils.OnUnitCube()])
 
         testdata = data_utils.ShapeNet2(args.dataset_path, transform=transform, classinfo=cinfo)
+        testset = data_utils.PointRegistration_fixed_perturbation(testdata, args.pose_file, sigma=args.sigma, clip=args.clip)
 
     elif args.dataset_type == '3dmatch':
         testset = data_utils.ThreeDMatch_Testing(args.dataset_path, args.categoryfile, args.overlap_ratio, 

@@ -325,7 +325,7 @@ def feature_jac(M, A, Ax, BN, device):
 def compute_warp_jac(t, xx, num_points):
     b = xx.shape[0]
     
-    warp_jac = torch.zeros(b, num_points, 3, 6)
+    warp_jac = torch.zeros(b, num_points, 3, 6).to(xx)
     T = exp(t)
     rotm = T[:, :3, :3]   # Bx3x3
     warp_jac[..., 3:] = -rotm.transpose(1,2).unsqueeze(1).repeat(1, num_points, 1, 1)   # BxNx3x6
@@ -352,7 +352,7 @@ def compute_warp_jac(t, xx, num_points):
 
 
 # explicitly compute the conditional warp Jacobian
-def cal_conditioned_warp_jacobian(voxel_coords, device):
+def cal_conditioned_warp_jacobian(voxel_coords):
     # conditioned warp: see supplementary for detailed math.
     #               --                                        --  ^-1
     #               |   1  ,   0  ,   0  ,   0  ,   0  ,   0   |
@@ -365,9 +365,9 @@ def cal_conditioned_warp_jacobian(voxel_coords, device):
     
     V = voxel_coords.shape[0]
     conditioned_jac = torch.eye(6).repeat(V, 1, 1)   # V x 6 x 6
-    trans_twist_mat_00 = torch.zeros(V, 1).to(device)
-    trans_twist_mat_11 = torch.zeros(V, 1).to(device)
-    trans_twist_mat_22 = torch.zeros(V, 1).to(device)
+    trans_twist_mat_00 = torch.zeros(V, 1).to(voxel_coords)
+    trans_twist_mat_11 = torch.zeros(V, 1).to(voxel_coords)
+    trans_twist_mat_22 = torch.zeros(V, 1).to(voxel_coords)
     trans_twist_mat_01 = -voxel_coords[:, 2].unsqueeze(1)
     trans_twist_mat_02 = voxel_coords[:, 1].unsqueeze(1)
     trans_twist_mat_10 = voxel_coords[:, 2].unsqueeze(1)

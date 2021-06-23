@@ -232,8 +232,7 @@ class AnalyticalPointNetLK(torch.nn.Module):
         feature_j = feature_j.permute(0, 3, 1, 2)   # B x N x 6 x K
         
         # 3. compose to get final Jacobian
-        J_ = torch.einsum('ijkl,ijkm->ijlm', feature_j,
-                        warp_jac.to(self.device))   # B x N x K x 6, K=1024
+        J_ = torch.einsum('ijkl,ijkm->ijlm', feature_j, warp_jac)   # B x N x K x 6, K=1024
         
         # 4. max pooling according to network
         dim_k = J_.shape[2]
@@ -255,8 +254,8 @@ class AnalyticalPointNetLK(torch.nn.Module):
             
             # 1. explicit expression for the conditioned warp of 6 twist parameters
             # V x 6 x 6, using the difference between the local points mean and global points mean
-            warp_condition = utils.cal_conditioned_warp_jacobian(voxel_coords_diff, self.device)   
-            warp_condition = warp_condition.permute(0,2,1).reshape(-1, 6).to(self.device)   # (V6) x 6
+            warp_condition = utils.cal_conditioned_warp_jacobian(voxel_coords_diff)   
+            warp_condition = warp_condition.permute(0,2,1).reshape(-1, 6)   # (V6) x 6
 
             J = torch.einsum('ij,jk->ik', J_, warp_condition).unsqueeze(0)   # 1 X K X 6
             

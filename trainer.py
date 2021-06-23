@@ -42,7 +42,7 @@ class TrainerAnalyticalPointNetLK:
         ptnet = self.create_features()
         return self.create_from_pointnet_features(ptnet)
 
-    def train_one_epoch(self, ptnetlk, trainloader, optimizer, device, epoch, mode, num_random_points=100):
+    def train_one_epoch(self, ptnetlk, trainloader, optimizer, device, mode, data_type='synthetic', num_random_points=100):
         ptnetlk.float()
         ptnetlk.train()
         vloss = 0.0
@@ -50,7 +50,7 @@ class TrainerAnalyticalPointNetLK:
         batches = 0
 
         for i, data in enumerate(trainloader):
-            loss, loss_pose = self.compute_loss(ptnetlk, data, device, epoch, mode, num_random_points)
+            loss, loss_pose = self.compute_loss(ptnetlk, data, device, mode, data_type, num_random_points)
 
             optimizer.zero_grad()
             loss.backward()
@@ -66,14 +66,14 @@ class TrainerAnalyticalPointNetLK:
         
         return ave_vloss, ave_loss_pose
 
-    def eval_one_epoch(self, ptnetlk, testloader, device, epoch, mode, num_random_points=100):
+    def eval_one_epoch(self, ptnetlk, evalloader, device, mode, data_type='synthetic', num_random_points=100):
         ptnetlk.eval()
         vloss = 0.0
         gloss = 0.0
         batches = 0
 
-        for _, data in enumerate(testloader):
-            loss, loss_pose = self.compute_loss(ptnetlk, data, device, epoch, mode, num_random_points)
+        for _, data in enumerate(evalloader):
+            loss, loss_pose = self.compute_loss(ptnetlk, data, device, mode, data_type, num_random_points)
 
             vloss += (loss.item())
             gloss += (loss_pose.item())
@@ -107,6 +107,8 @@ class TrainerAnalyticalPointNetLK:
                 gt_pose = gt_pose.float().to(device)
             else:
                 p0, p1, gt_pose = data
+                p0 = p0.float().to(device)
+                p1 = p1.float().to(device)
             
             if vis:
                 start_idx = 0
@@ -193,7 +195,7 @@ class TrainerAnalyticalPointNetLK:
         
         return 
 
-    def compute_loss(self, ptnetlk, data, device, mode, data_type='synthetic', num_random_points=100):    
+    def compute_loss(self, ptnetlk, data, device, mode, data_type='synthetic', num_random_points=100):
         # 1. non-voxelization
         if data_type == 'synthetic':
             p0, p1, gt_pose = data

@@ -126,9 +126,9 @@ def train(args, trainset, evalset, dptnetlk):
     LOGGER.debug('Begin Training!')
     for epoch in range(args.start_epoch, args.max_epochs):
         running_loss, running_info = dptnetlk.train_one_epoch(
-            model, trainloader, optimizer, args.device, epoch, 'train', num_random_points=args.num_random_points)
+            model, trainloader, optimizer, args.device, 'train', args.data_type, num_random_points=args.num_random_points)
         val_loss, val_info = dptnetlk.eval_one_epoch(
-            model, evalloader, args.device, epoch, 'eval', num_random_points=args.num_random_points)
+            model, evalloader, args.device, 'eval', args.data_type, num_random_points=args.num_random_points)
         
         is_best = val_loss < min_loss
         min_loss = min(val_loss, min_loss)
@@ -170,6 +170,8 @@ def get_datasets(args):
 
         trainset = data_utils.PointRegistration(traindata, data_utils.RandomTransformSE3(args.mag))
         evalset = data_utils.PointRegistration(evaldata, data_utils.RandomTransformSE3(args.mag))
+    else:
+        print('wrong dataset type!')
 
     return trainset, evalset
 
