@@ -105,10 +105,22 @@ class TrainerAnalyticalPointNetLK:
                 voxel_coords_p0 = voxel_coords_p0.reshape(-1, voxel_coords_p0.shape[2]).to(device)
                 voxel_coords_p1 = voxel_coords_p1.reshape(-1, voxel_coords_p1.shape[2]).to(device)
                 gt_pose = gt_pose.float().to(device)
+                if voxel_features_p0.shape[0] == 0 or voxel_features_p1.shape[0] == 0:
+                    data_flag = -1
+                else:
+                    data_flag = 1
             else:
                 p0, p1, gt_pose = data
                 p0 = p0.float().to(device)
                 p1 = p1.float().to(device)
+                if p0.shape[0] == 0 or p1.shape[0] == 0:
+                    data_flag = -1
+                else:
+                    data_flag = 1
+                    
+            if data_flag == -1:
+                print('empty data, continue!')
+                continue
             
             if vis:
                 start_idx = 0
@@ -213,8 +225,8 @@ class TrainerAnalyticalPointNetLK:
             voxel_coords_p1 = voxel_coords_p1.reshape(-1, voxel_coords_p1.shape[2]).to(device)
             gt_pose = gt_pose.reshape(-1, gt_pose.shape[2], gt_pose.shape[3]).to(device)
             
-            r = model.AnalyticalPointNetLK.do_forward(ptnetlk, voxel_features_p0_, voxel_coords_p0_,
-                    voxel_features_p1_, voxel_coords_p1_, self.max_iter, self.xtol, self.p0_zero_mean, self.p1_zero_mean, mode, data_type, num_random_points)
+            r = model.AnalyticalPointNetLK.do_forward(ptnetlk, voxel_features_p0, voxel_coords_p0,
+                    voxel_features_p1, voxel_coords_p1, self.max_iter, self.xtol, self.p0_zero_mean, self.p1_zero_mean, mode, data_type, num_random_points)
 
         estimated_pose = ptnetlk.g
 

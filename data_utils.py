@@ -53,7 +53,7 @@ def find_voxel_overlaps(p0, p1, voxel):
 
 
 class ThreeDMatch_Testing(torch.utils.data.Dataset):
-    def __init__(self, dataset_path, category, overlap_ratio, voxel_ratio, voxel, max_voxel_points, num_voxels, rigid_transform, vis):
+    def __init__(self, dataset_path, category, overlap_ratio, voxel_ratio, voxel, max_voxel_points, num_voxels, rigid_transform, vis, voxel_after_transf):
         self.dataset_path = dataset_path
         self.pairs = []
         with open(category, 'r') as fi:
@@ -74,7 +74,8 @@ class ThreeDMatch_Testing(torch.utils.data.Dataset):
         self.num_voxels = num_voxels
         self.perturbation = load_pose(rigid_transform, len(self.pairs))
         self.vis = vis
-
+        self.voxel_after_transf = voxel_after_transf
+        
     def __len__(self):
         return len(self.pairs)
 
@@ -85,28 +86,75 @@ class ThreeDMatch_Testing(torch.utils.data.Dataset):
         p1 = utils.transform(g, p0)
         igt = g.squeeze(0) # igt: p0 -> p1
         return p1, igt
-
+    
     def __getitem__(self, index):
         p0_pre, p1_pre = load_3dmatch_batch_data(os.path.join(self.dataset_path, self.pairs[index][0]), os.path.join(self.dataset_path, self.pairs[index][1]), self.voxel_ratio)
         
-        # voxelization
-        p0, p1, xmin, ymin, zmin, xmax, ymax, zmax, vx, vy, vz = find_voxel_overlaps(p0_pre, p1_pre, self.voxel)   # constraints of P1 ^ P2, where contains roughly overlapped area
-        voxels_p0, coords_p0, num_points_per_voxel_p0 = points_to_voxel_second(p0, (xmin, ymin, zmin, xmax, ymax, zmax), 
-                        (vx, vy, vz), self.max_voxel_points, reverse_index=False, max_voxels=self.num_voxels)
-        voxels_p1, coords_p1, num_points_per_voxel_p1 = points_to_voxel_second(p1, (xmin, ymin, zmin, xmax, ymax, zmax), 
-                        (vx, vy, vz), self.max_voxel_points, reverse_index=False, max_voxels=self.num_voxels)
+        if self.voxel_after_transf:
+            x = torch.from_numpy(self.perturbation[index][np.newaxis,...])
+            p1_pre, igt = self.do_transform(torch.from_numpy(p1_pre).double(), x)
+        
+            p0_pre_mean = np.mean(p0_pre,0)
+            p1_pre_mean = np.mean(p1_pre.numpy(),0)
+            p0_pre_ = p0_pre - p0_pre_mean
+            p1_pre_ = p1_pre.numpy() - p1_pre_mean
+            
+            # voxelization
+            p0, p1, xmin, ymin, zmin, xmax, ymax, zmax, vx, vy, vz = find_voxel_overlaps(p0_pre_, p1_pre_, self.voxel)   # constraints of P1 ^ P2, where contains roughly overlapped area
+            
+            p0 = p0 + p0_pre_mean
+            p1 = p1 + p1_pre_mean
+            xmin0 = xmin + p0_pre_mean[0]
+            ymin0 = ymin + p0_pre_mean[1]
+            zmin0 = zmin + p0_pre_mean[2]
+            xmax0 = xmax + p0_pre_mean[0]
+            ymax0 = ymax + p0_pre_mean[1]
+            zmax0 = zmax + p0_pre_mean[2]
+
+            xmin1 = xmin + p1_pre_mean[0]
+            ymin1 = ymin + p1_pre_mean[1]
+            zmin1 = zmin + p1_pre_mean[2]
+            xmax1 = xmax + p1_pre_mean[0]
+            ymax1 = ymax + p1_pre_mean[1]
+            zmax1 = zmax + p1_pre_mean[2]
+            
+            voxels_p0, coords_p0, num_points_per_voxel_p0 = points_to_voxel_second(p0, (xmin0, ymin0, zmin0, xmax0, ymax0, zmax0), 
+                            (vx, vy, vz), self.max_voxel_points, reverse_index=False, max_voxels=self.num_voxels)
+            voxels_p1, coords_p1, num_points_per_voxel_p1 = points_to_voxel_second(p1, (xmin1, ymin1, zmin1, xmax1, ymax1, zmax1), 
+                            (vx, vy, vz), self.max_voxel_points, reverse_index=False, max_voxels=self.num_voxels)
+        else:
+            # voxelization
+            p0, p1, xmin, ymin, zmin, xmax, ymax, zmax, vx, vy, vz = find_voxel_overlaps(p0_pre, p1_pre, self.voxel)   # constraints of P1 ^ P2, where contains roughly overlapped area
+            voxels_p0, coords_p0, num_points_per_voxel_p0 = points_to_voxel_second(p0, (xmin, ymin, zmin, xmax, ymax, zmax), 
+                            (vx, vy, vz), self.max_voxel_points, reverse_index=False, max_voxels=self.num_voxels)
+            voxels_p1, coords_p1, num_points_per_voxel_p1 = points_to_voxel_second(p1, (xmin, ymin, zmin, xmax, ymax, zmax), 
+                            (vx, vy, vz), self.max_voxel_points, reverse_index=False, max_voxels=self.num_voxels)
         
         coords_p0_idx = coords_p0[:,1]*(int(self.voxel**2)) + coords_p0[:,0]*(int(self.voxel)) + coords_p0[:,2]
         coords_p1_idx = coords_p1[:,1]*(int(self.voxel**2)) + coords_p1[:,0]*(int(self.voxel)) + coords_p1[:,2]
         
-        # calculate for the voxel medium
-        xm_x = np.linspace(xmin+vx/2, xmax-vx/2, int(self.voxel))
-        xm_y = np.linspace(ymin+vy/2, ymax-vy/2, int(self.voxel))
-        xm_z = np.linspace(zmin+vz/2, zmax-vz/2, int(self.voxel))
-        mesh3d = np.vstack(np.meshgrid(xm_x,xm_y,xm_z)).reshape(3,-1).T
-        voxel_coords_p0 = mesh3d[coords_p0_idx]
-        voxel_coords_p1 = mesh3d[coords_p1_idx]
-        
+        if self.voxel_after_transf:
+            # calculate for the voxel medium
+            xm_x0 = np.linspace(xmin0+vx/2, xmax0-vx/2, int(self.voxel))
+            xm_y0 = np.linspace(ymin0+vy/2, ymax0-vy/2, int(self.voxel))
+            xm_z0 = np.linspace(zmin0+vz/2, zmax0-vz/2, int(self.voxel))
+            mesh3d0 = np.vstack(np.meshgrid(xm_x0,xm_y0,xm_z0)).reshape(3,-1).T
+            xm_x1 = np.linspace(xmin1+vx/2, xmax1-vx/2, int(self.voxel))
+            xm_y1 = np.linspace(ymin1+vy/2, ymax1-vy/2, int(self.voxel))
+            xm_z1 = np.linspace(zmin1+vz/2, zmax1-vz/2, int(self.voxel))
+            mesh3d1 = np.vstack(np.meshgrid(xm_x1,xm_y1,xm_z1)).reshape(3,-1).T
+            
+            voxel_coords_p0 = mesh3d0[coords_p0_idx]
+            voxel_coords_p1 = mesh3d1[coords_p1_idx]
+        else:
+            # calculate for the voxel medium
+            xm_x = np.linspace(xmin+vx/2, xmax-vx/2, int(self.voxel))
+            xm_y = np.linspace(ymin+vy/2, ymax-vy/2, int(self.voxel))
+            xm_z = np.linspace(zmin+vz/2, zmax-vz/2, int(self.voxel))
+            mesh3d = np.vstack(np.meshgrid(xm_x,xm_y,xm_z)).reshape(3,-1).T
+            voxel_coords_p0 = mesh3d[coords_p0_idx]
+            voxel_coords_p1 = mesh3d[coords_p1_idx]
+            
         # find voxels where number of points >= 80% of the maximum number of points
         idx_conditioned_p0 = coords_p0_idx[np.where(num_points_per_voxel_p0>=0.1*self.max_voxel_points)]
         idx_conditioned_p1 = coords_p1_idx[np.where(num_points_per_voxel_p1>=0.1*self.max_voxel_points)]
@@ -118,11 +166,12 @@ class ThreeDMatch_Testing(torch.utils.data.Dataset):
         voxels_p0 = voxels_p0[idx_p0]
         voxels_p1 = voxels_p1[idx_p1]
         
-        x = torch.from_numpy(self.perturbation[index][np.newaxis,...])
-        voxels_p1_, igt = self.do_transform(torch.from_numpy(voxels_p1.reshape(-1,3)), x)
-        voxels_p1 = voxels_p1_.reshape(voxels_p1.shape)
-        voxel_coords_p1, _ = self.do_transform(torch.from_numpy(voxel_coords_p1).double(), x)
-        p1, _ = self.do_transform(torch.from_numpy(p1), x)
+        if not self.voxel_after_transf:
+            x = torch.from_numpy(self.perturbation[index][np.newaxis,...])
+            voxels_p1_, igt = self.do_transform(torch.from_numpy(voxels_p1.reshape(-1,3)), x)
+            voxels_p1 = voxels_p1_.reshape(voxels_p1.shape)
+            voxel_coords_p1, _ = self.do_transform(torch.from_numpy(voxel_coords_p1).double(), x)
+            p1, _ = self.do_transform(torch.from_numpy(p1), x)
         
         if self.vis:
             return voxels_p0, voxel_coords_p0, voxels_p1, voxel_coords_p1, igt, p0, p1
@@ -389,15 +438,9 @@ def points_to_voxel_second(points,
     voxels = np.ones(
         shape=(max_voxels, max_points, points.shape[-1]), dtype=points.dtype) * np.mean(points, 0)
     coors = np.zeros(shape=(max_voxels, 3), dtype=np.int32)
-    if reverse_index:
-        voxel_num = _points_to_voxel_reverse_kernel(
-            points, voxel_size, coords_range, num_points_per_voxel,
-            coor_to_voxelidx, voxels, coors, max_points, max_voxels)
-
-    else:
-        voxel_num = _points_to_voxel_kernel(
-            points, voxel_size, coords_range, num_points_per_voxel,
-            coor_to_voxelidx, voxels, coors, max_points, max_voxels)
+    voxel_num = _points_to_voxel_kernel(
+        points, voxel_size, coords_range, num_points_per_voxel,
+        coor_to_voxelidx, voxels, coors, max_points, max_voxels)
 
     coors = coors[:voxel_num]
     voxels = voxels[:voxel_num]

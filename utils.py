@@ -364,7 +364,7 @@ def cal_conditioned_warp_jacobian(voxel_coords):
     #               --                                        --
     
     V = voxel_coords.shape[0]
-    conditioned_jac = torch.eye(6).repeat(V, 1, 1)   # V x 6 x 6
+    conditioned_jac = torch.eye(6).repeat(V, 1, 1).to(voxel_coords)   # V x 6 x 6
     trans_twist_mat_00 = torch.zeros(V, 1).to(voxel_coords)
     trans_twist_mat_11 = torch.zeros(V, 1).to(voxel_coords)
     trans_twist_mat_22 = torch.zeros(V, 1).to(voxel_coords)
@@ -381,7 +381,7 @@ def cal_conditioned_warp_jacobian(voxel_coords):
     trans_twist_mat = torch.cat([trans_twist_mat_0, trans_twist_mat_1, trans_twist_mat_2], 1).reshape(-1, 3, 3)
     conditioned_jac[:, 3:, :3] = trans_twist_mat   # V x 6 x 6
     
-    conditioned_jac = torch.inverse(conditioned_jac)
+    conditioned_jac = torch.inverse(conditioned_jac).float()
     
     return conditioned_jac
     

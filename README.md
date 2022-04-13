@@ -42,6 +42,12 @@ We used 3DMatch dataset prepared by authors of Deep Global Registration, you may
 
 After you download the dataset, you can create a symbolic link in the ./dataset folder as ```./dataset/ModelNet``` and ```./dataset/ThreeDMatch```.
 
+
+### Notation on voxelization
+In the current setting, the voxelization for overlapped source and target point clouds still relies on "registered point clouds" (such as results from a global registration). The code for voxelization after "transformation" is updated by setting argument ```--voxel_after_transf``` to **True**.
+In the real-world application, our algorithm would be better suited for local registration problem.
+
+
 ### Training
 ```
 python train.py

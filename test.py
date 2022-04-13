@@ -55,6 +55,8 @@ def options(argv=None):
                         metavar='N', help='number of voxels')
     parser.add_argument('--vis', action='store_true', default=False,
                         help='whether to visualize or not')
+    parser.add_argument('--voxel_after_transf', action='store_true', default=False,
+                        help='given voxelization before or after transformation')
 
     # settings for Embedding
     parser.add_argument('--embedding', default='pointnet',
@@ -137,7 +139,7 @@ def get_datasets(args):
     elif args.dataset_type == '3dmatch':
         testset = data_utils.ThreeDMatch_Testing(args.dataset_path, args.categoryfile, args.overlap_ratio, 
                                                  args.voxel_ratio, args.voxel, args.max_voxel_points, 
-                                                 args.num_voxels, args.pose_file, args.vis)
+                                                 args.num_voxels, args.pose_file, args.vis, args.voxel_after_transf)
     
     return testset
 
